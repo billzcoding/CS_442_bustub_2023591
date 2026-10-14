@@ -11,8 +11,9 @@
 //===----------------------------------------------------------------------===//
 
 #pragma once
-
 #include <memory>
+#include <optional>     // ADD THIS
+#include <shared_mutex>
 
 #include "buffer/arc_replacer.h"
 #include "buffer/buffer_pool_manager.h"
@@ -37,6 +38,7 @@ class ReadPageGuard {
   /** @brief Only the buffer pool manager is allowed to construct a valid `ReadPageGuard.` */
   friend class BufferPoolManager;
 
+  std::optional<std::shared_lock<std::shared_mutex>> read_lock_;
  public:
   /**
    * @brief The default constructor for a `ReadPageGuard`.
@@ -222,6 +224,7 @@ class WritePageGuard {
    * or `Drop()` invalid members, causing a segmentation fault.
    */
   bool is_valid_{false};
+  std::optional<std::unique_lock<std::shared_mutex>> write_lock_;
 
   /**
    * TODO(P1): You may add any fields under here that you think are necessary.
@@ -232,3 +235,4 @@ class WritePageGuard {
 };
 
 }  // namespace bustub
+  

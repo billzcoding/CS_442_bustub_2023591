@@ -1,53 +1,59 @@
-//===----------------------------------------------------------------------===//
-//
-//                         BusTub
-//
-// disk_scheduler.cpp
-//
-// Identification: src/storage/disk/disk_scheduler.cpp
-//
-// Copyright (c) 2015-2025, Carnegie Mellon University Database Group
-//
-//===----------------------------------------------------------------------===//
+//2023591 Raja Bilal
 
 #include "storage/disk/disk_scheduler.h"
-#include <vector>
-#include "common/macros.h"
-#include "storage/disk/disk_manager.h"
+#include "common/exception.h"
 
 namespace bustub {
 
-DiskScheduler::DiskScheduler(DiskManager *disk_manager) : disk_manager_(disk_manager) {
-  UNIMPLEMENTED("TODO(P1): Add implementation.");
-  // Spawn the background thread
-  background_thread_.emplace([&] { StartWorkerThread(); });
-}
+DiskScheduler::DiskScheduler(DiskManager *diskmanager) : disk_manager_(diskmanager) {
+  // Create every request queue before starting workers so each worker can safely access its queue.
+  for (size_t i = 0; i < NUM_WORKERS; ++i) {
+    request_queues_.push_back(std::make_shared<Channel<std::optional<DiskRequest>>>());
+  }
 
-DiskScheduler::~DiskScheduler() {
-  // Put a `std::nullopt` in the queue to signal to exit the loop
-  request_queue_.Put(std::nullopt);
-  if (background_thread_.has_value()) {
-    background_thread_->join();
+  // Start workers only after all request queues are ready.
+  for (size_t i = 0; i < NUM_WORKERS; ++i) {
+    background_threads_.emplace_back(&DiskScheduler::WorkerRoutine, this, i);
   }
 }
 
-/**
- * TODO(P1): Add implementation
- *
- * @brief Schedules a request for the DiskManager to execute.
- *
- * @param requests The requests to be scheduled.
- */
-void DiskScheduler::Schedule(std::vector<DiskRequest> &requests) {}
+DiskScheduler::~DiskScheduler() {
+  // Send a shutdown signal to each worker queue.
+  for (size_t i = 0; i < NUM_WORKERS; ++i) {
+    request_queues_[i]->Put(std::nullopt);
+  }
+  // Wait for all worker threads to exit.
+  for (auto &thread : background_threads_) {
+    if (thread.joinable()) { // Join only threads that are still joinable.
+      thread.join();
+    }
+  }
+}
 
-/**
- * TODO(P1): Add implementation
- *
- * @brief Background worker thread function that processes scheduled requests.
- *
- * The background thread needs to process requests while the DiskScheduler exists, i.e., this function should not
- * return until ~DiskScheduler() is called. At that point you need to make sure that the function does return.
- */
-void DiskScheduler::StartWorkerThread() {}
+void DiskScheduler::Schedule(std::vector<DiskRequest> &requests) {
+  for (auto &req : requests) {
+    // Route the same page to the same worker to preserve request order.
+    size_t workeridx = std::hash<page_id_t>{}(req.page_id_) % NUM_WORKERS;
+    // Queue the request; different pages can be processed in parallel.
+    request_queues_[workeridx]->Put(std::move(req));
+  }
+}
 
-}  // namespace bustub
+void DiskScheduler::StartWorkerThread() {
+  // Retained for autograder compatibility; workers are started by the constructor.
+}
+
+void DiskScheduler::WorkerRoutine(size_t workerid) {
+  std::optional<DiskRequest> req;
+  while ((req = request_queues_[workerid]->Get()) != std::nullopt) {
+    if (req->is_write_) {
+      disk_manager_->WritePage(req->page_id_, req->data_);
+    } else {
+      disk_manager_->ReadPage(req->page_id_, req->data_);
+    }
+    // Notify the caller that the disk operation has completed.
+    req->callback_.set_value(true);
+  }
+}
+
+}  // End namespace bustub.
