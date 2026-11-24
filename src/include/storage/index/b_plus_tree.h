@@ -128,6 +128,14 @@ class BPlusTree {
 
   auto ToPrintableBPlusTree(page_id_t root_id) -> PrintableBPlusTree;
 
+  void ReleaseAncestors(Context &ctx);
+
+  void InsertIntoParent(Context &ctx, page_id_t old_page_id, const KeyType &key, page_id_t new_page_id);
+
+  void HandleLeafUnderflow(Context &ctx, WritePageGuard leaf_guard);
+
+  void HandleInternalUnderflow(Context &ctx, WritePageGuard node_guard);
+
   // member variable
   std::string index_name_;
   KeyComparator comparator_;

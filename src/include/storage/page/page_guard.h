@@ -12,7 +12,7 @@
 
 #pragma once
 #include <memory>
-#include <optional>     // ADD THIS
+#include <optional>  // ADD THIS
 #include <shared_mutex>
 
 #include "buffer/arc_replacer.h"
@@ -39,6 +39,7 @@ class ReadPageGuard {
   friend class BufferPoolManager;
 
   std::optional<std::shared_lock<std::shared_mutex>> read_lock_;
+
  public:
   /**
    * @brief The default constructor for a `ReadPageGuard`.
@@ -235,4 +236,3 @@ class WritePageGuard {
 };
 
 }  // namespace bustub
-  

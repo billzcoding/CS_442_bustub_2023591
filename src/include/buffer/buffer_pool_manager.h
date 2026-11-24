@@ -8,12 +8,12 @@
 
 #pragma once
 
+#include <condition_variable>  // NOLINT
 #include <list>
 #include <memory>
 #include <shared_mutex>
 #include <unordered_map>
 #include <vector>
-#include <condition_variable> // Added for lock-free I/O waiting
 
 #include "buffer/arc_replacer.h"
 #include "common/config.h"
@@ -63,8 +63,8 @@ class FrameHeader {
   /** @brief The ID of the page currently residing in this frame. INVALID_PAGE_ID if empty. */
   page_id_t page_id_{INVALID_PAGE_ID};
 
-  /** 
-   * @brief Flag indicating if this frame is currently undergoing a disk read/write. 
+  /**
+   * @brief Flag indicating if this frame is currently undergoing a disk read/write.
    * Used to prevent other threads from evicting or reading this frame while I/O is pending.
    */
   bool is_io_in_progress_{false};
@@ -98,7 +98,7 @@ class BufferPoolManager {
 
   /**
    * @brief The latch protecting the buffer pool's inner data structures.
-   * Protects page_table_, free_frames_, and the metadata fields of frames_ 
+   * Protects page_table_, free_frames_, and the metadata fields of frames_
    * (but NOT the actual data_ vectors during I/O).
    */
   std::shared_ptr<std::mutex> bpm_latch_;
@@ -125,8 +125,8 @@ class BufferPoolManager {
 
   // --- ADDED FOR OPTIMIZATION 3: TRUE PARALLELISM & LOCK-FREE I/O ---
 
-  /** 
-   * @brief Condition variable to coordinate threads waiting for disk I/O 
+  /**
+   * @brief Condition variable to coordinate threads waiting for disk I/O
    * to finish on a specific page, or waiting for a free frame to become available.
    */
   std::condition_variable cv_;

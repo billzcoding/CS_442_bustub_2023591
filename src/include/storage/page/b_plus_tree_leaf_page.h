@@ -73,6 +73,21 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   auto GetNextPageId() const -> page_id_t;
   void SetNextPageId(page_id_t next_page_id);
   auto KeyAt(int index) const -> KeyType;
+  auto ValueAt(int index) const -> ValueType;
+  auto KeyRefAt(int index) const -> const KeyType &;
+  auto ValueRefAt(int index) const -> const ValueType &;
+
+  auto GetNumTombstones() const -> size_t;
+  auto IsTombstoned(int index) const -> bool;
+  auto KeyIndex(const KeyType &key, const KeyComparator &comparator) const -> int;
+  auto Lookup(const KeyType &key, ValueType *value, const KeyComparator &comparator) const -> bool;
+  auto Insert(const KeyType &key, const ValueType &value, const KeyComparator &comparator) -> bool;
+  auto Remove(const KeyType &key, const KeyComparator &comparator) -> bool;
+
+  void MoveHalfTo(BPlusTreeLeafPage *recipient);
+  void MoveAllTo(BPlusTreeLeafPage *recipient);
+  void MoveFirstToEndOf(BPlusTreeLeafPage *recipient);
+  void MoveLastToFrontOf(BPlusTreeLeafPage *recipient);
 
   /**
    * @brief for test only return a string representing all keys in

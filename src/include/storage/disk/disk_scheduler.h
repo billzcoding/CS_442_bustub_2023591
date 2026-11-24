@@ -13,10 +13,10 @@
 #pragma once
 
 #include <future>  // NOLINT
+#include <memory>  // Added for std::shared_ptr
 #include <optional>
 #include <thread>  // NOLINT
 #include <vector>
-#include <memory>  // Added for std::shared_ptr
 
 #include "common/channel.h"
 #include "storage/disk/disk_manager.h"
@@ -48,7 +48,7 @@ struct DiskRequest {
  * @brief The DiskScheduler schedules disk read and write operations.
  *
  * A request is scheduled by calling DiskScheduler::Schedule() with an appropriate DiskRequest object. The scheduler
- * maintains background worker threads that process the scheduled requests using the disk manager. 
+ * maintains background worker threads that process the scheduled requests using the disk manager.
  */
 class DiskScheduler {
  public:
@@ -84,19 +84,19 @@ class DiskScheduler {
 
   /** Pointer to the disk manager. */
   DiskManager *disk_manager_ __attribute__((__unused__));
-  
-  /** 
+
+  /**
    * A sharded array of shared queues to concurrently schedule and process requests.
-   * We hash the page_id to route requests to a specific channel. This ensures 
+   * We hash the page_id to route requests to a specific channel. This ensures
    * Read-After-Write consistency for the same page, while allowing parallel I/O for different pages.
    */
   std::vector<std::shared_ptr<Channel<std::optional<DiskRequest>>>> request_queues_;
-  
+
   /** The pool of background threads responsible for issuing scheduled requests to the disk manager. */
   std::vector<std::thread> background_threads_;
 
-  /** 
-   * Helper function executed by each worker thread to process its dedicated queue. 
+  /**
+   * Helper function executed by each worker thread to process its dedicated queue.
    */
   void WorkerRoutine(size_t worker_id);
 };

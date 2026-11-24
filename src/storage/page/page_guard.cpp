@@ -1,4 +1,4 @@
-//2023591 Raja Bilal
+// 2023591 Raja Bilal
 #include "storage/page/page_guard.h"
 
 namespace bustub {
@@ -17,7 +17,7 @@ ReadPageGuard::ReadPageGuard(ReadPageGuard &&that) noexcept {
 
 auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & {
   if (this != &that) {
-    Drop(); // Release resources currently owned by this guard.
+    Drop();  // Release resources currently owned by this guard.
 
     is_valid_ = that.is_valid_;
     page_id_ = that.page_id_;
@@ -46,8 +46,8 @@ void ReadPageGuard::Flush() {
 
 void ReadPageGuard::Drop() {
   if (is_valid_) {
-    read_lock_.reset(); // Release the frame's shared latch.
-    
+    read_lock_.reset();  // Release the frame's shared latch.
+
     if (frame_) {
       std::lock_guard<std::mutex> lock(*bpm_latch_);
       if (frame_->pin_count_.fetch_sub(1) == 1) {
@@ -107,12 +107,8 @@ void WritePageGuard::Flush() {
 
 void WritePageGuard::Drop() {
   if (is_valid_) {
-    if (frame_) {
-      frame_->is_dirty_ = true; // A write guard may have modified the page.
-    }
-    
-    write_lock_.reset(); // Release the frame's exclusive latch.
-    
+    write_lock_.reset();  // Release the frame's exclusive latch.
+
     if (frame_) {
       std::lock_guard<std::mutex> lock(*bpm_latch_);
       if (frame_->pin_count_.fetch_sub(1) == 1) {
@@ -129,33 +125,24 @@ void WritePageGuard::Drop() {
 
 WritePageGuard::~WritePageGuard() { Drop(); }
 
-auto ReadPageGuard::GetPageId() const -> page_id_t { 
-  return page_id_; 
+auto ReadPageGuard::GetPageId() const -> page_id_t { return page_id_; }
+
+auto ReadPageGuard::GetData() const -> const char * { return frame_ ? frame_->GetData() : nullptr; }
+
+auto ReadPageGuard::IsDirty() const -> bool { return frame_ ? frame_->is_dirty_ : false; }
+
+auto WritePageGuard::GetPageId() const -> page_id_t { return page_id_; }
+
+auto WritePageGuard::GetData() const -> const char * { return frame_ ? frame_->GetData() : nullptr; }
+
+auto WritePageGuard::GetDataMut() -> char * {
+  if (frame_) {
+    frame_->is_dirty_ = true;
+    return frame_->GetDataMut();
+  }
+  return nullptr;
 }
 
-auto ReadPageGuard::GetData() const -> const char * { 
-  return frame_ ? frame_->GetData() : nullptr; 
-}
-
-auto ReadPageGuard::IsDirty() const -> bool { 
-  return frame_ ? frame_->is_dirty_ : false; 
-}
-
-
-auto WritePageGuard::GetPageId() const -> page_id_t { 
-  return page_id_; 
-}
-
-auto WritePageGuard::GetData() const -> const char * { 
-  return frame_ ? frame_->GetData() : nullptr; 
-}
-
-auto WritePageGuard::GetDataMut() -> char * { 
-  return frame_ ? frame_->GetDataMut() : nullptr; 
-}
-
-auto WritePageGuard::IsDirty() const -> bool { 
-  return frame_ ? frame_->is_dirty_ : false; 
-}
+auto WritePageGuard::IsDirty() const -> bool { return frame_ ? frame_->is_dirty_ : false; }
 
 }  // End namespace bustub.

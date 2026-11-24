@@ -1,4 +1,4 @@
-//2023591 Raja Bilal
+// 2023591 Raja Bilal
 
 #include "storage/disk/disk_scheduler.h"
 #include "common/exception.h"
@@ -24,7 +24,7 @@ DiskScheduler::~DiskScheduler() {
   }
   // Wait for all worker threads to exit.
   for (auto &thread : background_threads_) {
-    if (thread.joinable()) { // Join only threads that are still joinable.
+    if (thread.joinable()) {  // Join only threads that are still joinable.
       thread.join();
     }
   }
